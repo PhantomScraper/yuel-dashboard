@@ -12,8 +12,8 @@ import { usePropertyStore } from '~/stores/property'
 const propertyStore = usePropertyStore()
 
 // Tabs
-const tabs = ref(['data1', '1M - 5M', 'data3', 'data4', 'data5', 'data6', 'data7', 'data8', 'data9', 'data10'])
-const activeTab = ref('data1')
+const tabs = ref(['600K - 1.2M', '1.2M - 5M', '1M - 4M', '600K - 1.3M Filtered', 'Pending Undercontract'])
+const activeTab = ref('600K - 1.2M')
 
 // Filter states
 const filters = ref({
