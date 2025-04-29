@@ -34,7 +34,8 @@ export default defineEventHandler(async (event) => {
       ];
     }
     if (query.priceChanges === 'true') {
-      filters.priceChanges = { $exists: true, $not: { $size: 0 } }
+      filters.priceChanges = { $exists: true, $type: 'array' }
+      filters.$expr = { $gt: [{ $size: "$priceChanges" }, 1] }
     }
 
     // Connect to MongoDB
@@ -42,8 +43,9 @@ export default defineEventHandler(async (event) => {
     const collection = db.collection<Property>(collectionName)
 
     // Fetch properties with filters
-    const properties = await collection.find(filters).toArray()
-
+    const properties = (await collection.find(filters).toArray()).sort((a: any, b: any) => {
+      return new Date(b.update_at).getTime() - new Date(a.update_at).getTime();
+    });
     return properties.map(doc => {
       const { _id, id: originalId, ...restProps } = doc as any
 

@@ -19,7 +19,7 @@ const TAB_COLLECTIONS: Record<TabName, string> = {
   '600K - 1.3M Filtered': '600_1.3M',
   'Pending Undercontract': 'pending_under_contract',
   'Tracking price 600_1.2M': '600_1.2M',
-  'Tracking price 1.2M_5M': '1.2M - 5M',
+  'Tracking price 1.2M_5M': '1.2M_5M',
 }
 
 export const usePropertyStore = defineStore('property', () => {
