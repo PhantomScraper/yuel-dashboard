@@ -7,9 +7,10 @@ type FilterOptions = {
   yearBuilt?: number
   startDate?: string
   endDate?: string
+  priceChanges?: boolean
 }
 
-type TabName = '600K - 1.2M' | '1.2M - 5M' | '1M - 4M' | '600K - 1.3M Filtered' | 'Pending Undercontract'
+type TabName = '600K - 1.2M' | '1.2M - 5M' | '1M - 4M' | '600K - 1.3M Filtered' | 'Pending Undercontract' | 'Tracking price 600_1.2M' | 'Tracking price 1.2M_5M'
 
 const TAB_COLLECTIONS: Record<TabName, string> = {
   '600K - 1.2M': '600_1.2M',
@@ -17,6 +18,8 @@ const TAB_COLLECTIONS: Record<TabName, string> = {
   '1M - 4M': '1M_4M',
   '600K - 1.3M Filtered': '600_1.3M',
   'Pending Undercontract': 'pending_under_contract',
+  'Tracking price 600_1.2M': '600_1.2M',
+  'Tracking price 1.2M_5M': '1.2M - 5M',
 }
 
 export const usePropertyStore = defineStore('property', () => {
@@ -72,6 +75,10 @@ export const usePropertyStore = defineStore('property', () => {
         queryParams.append('endDate', filters.value.endDate)
       }
 
+      if (tab === 'Tracking price 600_1.2M' || tab === 'Tracking price 1.2M_5M') {
+        queryParams.append('priceChanges', 'true')
+      }
+
       // Fetch data from API with query parameters
       const response = await fetch(`${API_ENDPOINTS.GET_PROPERTIES}?${queryParams.toString()}`)
 
@@ -105,6 +112,7 @@ export const usePropertyStore = defineStore('property', () => {
         yearBuilt: Number(item.yearBuilt) || 0,
         update_at: item.update_at || new Date().toISOString(),
         note: item.note || '',
+        priceChanges: item.priceChanges || [],
       })) as Property[]
 
       // We're doing server-side filtering now, so we can just use the returned data
@@ -215,8 +223,7 @@ export const usePropertyStore = defineStore('property', () => {
     console.log('Applying filters:', options)
     filters.value = options
 
-    // With MongoDB integration, we'll refetch data with filters
-    fetchProperties()
+    fetchProperties(currentTab.value)
   }
 
   // Initialize

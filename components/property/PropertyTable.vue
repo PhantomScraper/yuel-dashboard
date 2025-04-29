@@ -55,6 +55,18 @@ const formatDate = (date: unknown): string => {
   return new Date(date).toLocaleString()
 }
 
+// Check if current tab is a price tracking tab
+const isPriceTrackingTab = computed(() => {
+  console.log('Current tab in Table:', propertyStore.currentTab)
+  return propertyStore.currentTab === 'Tracking price 600_1.2M' || 
+         propertyStore.currentTab === 'Tracking price 1.2M_5M'
+})
+
+// Format price for display
+const formatPrice = (price: number): string => {
+  return `$${price.toLocaleString()}`
+}
+
 type ActionCellData = {
   id: string
   note: string
@@ -149,14 +161,20 @@ const rowSelection = ref({})
 const pageIndex = ref(0)
 const pageSize = ref(10)
 
-// Track expanded rows (for note display)
+// Track expanded rows (for note display and price history)
 const expandedRows = ref<Record<string, boolean>>({})
+const expandedPriceHistories = ref<Record<string, boolean>>({})
 
 // State for editing note
 const editingNote = ref<{ id: string; note: string } | null>(null)
 
 const toggleRowExpanded = (rowId: string) => {
   expandedRows.value[rowId] = !expandedRows.value[rowId]
+}
+
+const togglePriceHistoryExpanded = (rowId: string) => {
+  console.log('Toggling price history for row:', rowId)
+  expandedPriceHistories.value[rowId] = !expandedPriceHistories.value[rowId]
 }
 
 const startEditingNote = (propertyId: string, currentNote: string) => {
@@ -259,6 +277,28 @@ const handleNoteUpdate = async (propertyId: string, note: string) => {
   await propertyStore.updateNote(propertyId, note)
   emit('update:note', propertyId, note)
 }
+
+// Check if a property has price history data
+const hasPriceChanges = (property: Property): boolean => {
+  return !!property.priceChanges && 
+         Array.isArray(property.priceChanges) && 
+         property.priceChanges.length > 0
+}
+
+// Get price change information
+const getPriceChangeInfo = (property: Property) => {
+  if (!hasPriceChanges(property)) return null
+  
+  const currentPrice = property.price
+  const lastChange = property.priceChanges[0]
+  const oldPrice = lastChange.price
+  
+  return {
+    currentPrice,
+    oldPrice,
+    changeDate: lastChange.updated_at || lastChange.update_at,
+  }
+}
 </script>
 
 <template>
@@ -324,12 +364,21 @@ const handleNoteUpdate = async (propertyId: string, note: string) => {
                       </span>
                     </div>
                   </template>
+                  <template v-else-if="cell.column.id === 'price'">
+                    <div class="flex items-center">
+                      <span>{{ formatPrice(row.original.price) }}</span>
+                    </div>
+                  </template>
                   <template v-else-if="cell.column.id === 'actions'">
-                    <RowActions
-                      :property-id="row.original.id"
-                      :note="row.original.note || ''"
-                      @update:note="handleNoteUpdate"
-                    />
+                    <div class="flex items-center space-x-2">
+                      <RowActions
+                        :property-id="row.original.id"
+                        :note="row.original.note || ''"
+                        :price-changes="row.original.priceChanges"
+                        @update:note="handleNoteUpdate"
+                        @toggle:priceHistory="togglePriceHistoryExpanded(row.id)"
+                      />
+                    </div>
                   </template>
                   <template v-else>
                     <FlexRender
@@ -337,6 +386,57 @@ const handleNoteUpdate = async (propertyId: string, note: string) => {
                       :props="cell.getContext()"
                     />
                   </template>
+                </td>
+              </tr>
+              
+              <!-- Price history expanded row -->
+              <tr v-if="isPriceTrackingTab && hasPriceChanges(row.original) && expandedPriceHistories[row.id]" class="bg-blue-50">
+                <td :colspan="row.getVisibleCells().length" class="px-6 py-2">
+                  <div class="w-[60%] p-3 bg-white border border-blue-200 rounded-md">
+                    <div class="flex justify-between items-start">
+                      <h4 class="text-sm font-medium text-blue-700 mb-2">Price Change History</h4>
+                      <button
+                        @click="togglePriceHistoryExpanded(row.id)"
+                        class="text-gray-400 hover:text-gray-600"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-xs border-collapse">
+                        <thead>
+                          <tr class="bg-blue-50">
+                            <th class="px-2 py-1 border border-blue-100 text-left">Date</th>
+                            <th class="px-2 py-1 border border-blue-100 text-right">Price</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <!-- Current price -->
+                          <tr class="bg-blue-50 bg-opacity-30">
+                            <td class="px-2 py-1 border border-blue-100">
+                              Current
+                            </td>
+                            <td class="px-2 py-1 border border-blue-100 text-right font-medium">
+                              {{ formatPrice(row.original.price) }}
+                            </td>
+                          </tr>
+                          
+                          <!-- Historical prices -->
+                          <tr v-for="(change, index) in row.original.priceChanges" :key="index">
+                            <td class="px-2 py-1 border border-blue-100">
+                              {{ formatDate(change.updated_at || change.update_at) }}
+                            </td>
+                            <td class="px-2 py-1 border border-blue-100 text-right">
+                              {{ formatPrice(change.price) }}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </td>
               </tr>
               

@@ -1,18 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { usePropertyStore } from '~/stores/property'
 
 const props = defineProps<{
   propertyId: string
   note: string
+  priceChanges?: Array<{ price: number, updated_at?: string, update_at?: string }>
 }>()
 
 const emit = defineEmits<{
   (e: 'update:note', propertyId: string, note: string): void
+  (e: 'toggle:priceHistory', propertyId: string): void
 }>()
 
 // Use the property store
 const propertyStore = usePropertyStore()
+
+// Check if current tab is a price tracking tab
+const isPriceTrackingTab = computed(() => {
+  const currentTab = propertyStore.currentTab
+  console.log('Current tab in RowActions:', currentTab)
+  return currentTab === 'Tracking price 600_1.2M' || currentTab === 'Tracking price 1.2M_5M'
+})
 
 // Track if the note modal is open
 const isNoteModalOpen = ref(false)
@@ -42,10 +51,35 @@ const saveNote = async () => {
     console.error('Error updating note:', error)
   }
 }
+
+// Toggle price history visibility
+const togglePriceHistory = () => {
+  console.log('Toggle price history from RowActions, property ID:', props.propertyId)
+  emit('toggle:priceHistory', props.propertyId)
+}
+
+// Check if a property has price history data
+const hasPriceChanges = computed(() => {
+  const result = !!props.priceChanges && 
+         Array.isArray(props.priceChanges) && 
+         props.priceChanges.length > 0
+  console.log('Property has price changes:', result, props.priceChanges)
+  return result
+})
+
+// Debug information
+console.log('RowActions props:', {
+  propertyId: props.propertyId,
+  hasNote: !!props.note,
+  priceChanges: props.priceChanges,
+  isPriceTrackingTab: isPriceTrackingTab.value,
+  hasPriceChanges: hasPriceChanges.value
+})
 </script>
 
 <template>
   <div class="flex space-x-2">
+    <!-- Note button -->
     <button
       @click="openNoteModal"
       class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center"
@@ -62,6 +96,18 @@ const saveNote = async () => {
         </svg>
         Add note
       </template>
+    </button>
+
+    <!-- Price history button - always show in price tracking tabs for debugging -->
+    <button 
+      v-if="isPriceTrackingTab"
+      @click="togglePriceHistory"
+      class="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 flex items-center"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
+      </svg>
+      History
     </button>
 
     <!-- Note Modal -->
@@ -99,4 +145,4 @@ const saveNote = async () => {
       </div>
     </div>
   </div>
-</template> 
+</template>

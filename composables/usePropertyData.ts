@@ -36,14 +36,14 @@ export const usePropertyData = () => {
       const currentFilters = filters.value
 
       // City filter
-      if (currentFilters.city && property.addressCity && 
-          !property.addressCity.toLowerCase().includes(currentFilters.city.toLowerCase())) {
+      if (currentFilters.city && property.addressCity &&
+        !property.addressCity.toLowerCase().includes(currentFilters.city.toLowerCase())) {
         return false
       }
 
       // State filter
-      if (currentFilters.state && property.addressState && 
-          !property.addressState.toLowerCase().includes(currentFilters.state.toLowerCase())) {
+      if (currentFilters.state && property.addressState &&
+        !property.addressState.toLowerCase().includes(currentFilters.state.toLowerCase())) {
         return false
       }
 
@@ -128,6 +128,7 @@ export const usePropertyData = () => {
         yearBuilt: Number(item.yearBuilt) || 0,
         update_at: item.update_at || new Date().toISOString(),
         note: item.note || '',
+        priceChanges: item.priceChanges || [],
       })) as Property[]
 
       console.log('Properties updated:', properties.value)

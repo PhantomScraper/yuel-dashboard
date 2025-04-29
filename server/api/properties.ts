@@ -33,6 +33,9 @@ export default defineEventHandler(async (event) => {
         { update_at: null }
       ];
     }
+    if (query.priceChanges === 'true') {
+      filters.priceChanges = { $exists: true, $not: { $size: 0 } }
+    }
 
     // Connect to MongoDB
     const { db } = await connectToDatabase()
