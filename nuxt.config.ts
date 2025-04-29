@@ -21,5 +21,10 @@ export default defineNuxtConfig({
     }
   },
 
+  runtimeConfig: {
+    mongoUri: process.env.MONGO_URI,
+    mongoDbName: process.env.MONGO_DB_NAME
+  },
+
   compatibilityDate: '2025-04-26'
 })

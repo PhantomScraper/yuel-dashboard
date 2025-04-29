@@ -37,7 +37,7 @@ const columns = [
   { id: 'latestSoldYear', header: 'Last Sold' },
   { id: 'saves', header: 'Saves' },
   { id: 'detailUrl', header: 'Details' },
-  { id: 'updated_at', header: 'Updated At' },
+  { id: 'update_at', header: 'Updated At' },
 ]
 
 const visibleColumns = ref(columns.map(col => col.id))
@@ -67,13 +67,13 @@ const isToday = (dateString: string): boolean => {
 const totalUpdatedToday = computed(() => {
   if (!propertyStore.filteredProperties.length) return 0
   return propertyStore.filteredProperties.filter(property => 
-    isToday(property.updated_at)
+    isToday(property.update_at)
   ).length
 })
 
 const handleTabChange = async (tab: string) => {
   activeTab.value = tab
-  await propertyStore.fetchProperties()
+  await propertyStore.fetchProperties(activeTab.value)
 }
 
 const handleNoteUpdate = async (propertyId: string, note: string) => {
@@ -95,13 +95,8 @@ onMounted(() => {
 <template>
   <div class="min-h-screen bg-gray-50">
     <div class="container mx-auto px-4 py-8">
-      <!-- Loading State -->
-      <div v-if="propertyStore.isLoading" class="flex justify-center items-center h-64">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-
       <!-- Error State -->
-      <div v-else-if="propertyStore.error" class="bg-red-50 border border-red-200 rounded-lg p-4">
+      <div v-if="propertyStore.error" class="bg-red-50 border border-red-200 rounded-lg p-4">
         <p class="text-red-700">{{ propertyStore.error }}</p>
       </div>
 
@@ -135,7 +130,6 @@ onMounted(() => {
         <!-- Filters -->
         <PropertyFilters v-model="filters" class="mb-8" />
 
-        <!-- Table -->
         <PropertyTable
           :data="propertyStore.filteredProperties"
           :is-loading="propertyStore.isLoading"
@@ -146,4 +140,4 @@ onMounted(() => {
       </template>
     </div>
   </div>
-</template> 
+</template>

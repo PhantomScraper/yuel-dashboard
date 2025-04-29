@@ -126,7 +126,7 @@ export const usePropertyData = () => {
         saves: Number(item.saves) || 0,
         latestSoldYear: Number(item.latestSoldYear) || 0,
         yearBuilt: Number(item.yearBuilt) || 0,
-        updated_at: item.updated_at || new Date().toISOString(),
+        update_at: item.update_at || new Date().toISOString(),
         note: item.note || '',
       })) as Property[]
 

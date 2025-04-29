@@ -24,19 +24,42 @@ const filters = ref({
   endDate: props.modelValue.endDate || '',
 })
 
-// Update parent when local state changes
-watch(filters, (newFilters) => {
-  emit('update:modelValue', { ...newFilters })
-}, { deep: true })
+const debounceTimer = ref<NodeJS.Timeout | null>(null)
+
+const updateParent = () => {
+  // Clear existing timer
+  if (debounceTimer.value) {
+    clearTimeout(debounceTimer.value)
+  }
+  
+  debounceTimer.value = setTimeout(() => {
+    emit('update:modelValue', { ...filters.value })
+    debounceTimer.value = null
+  }, 500) // 500ms debounce
+}
+
+// Use separate handlers for different input types
+const handleNumberInput = (e: Event, field: 'minPrice' | 'maxPrice' | 'yearBuilt') => {
+  const target = e.target as HTMLInputElement
+  const value = target.value ? Number(target.value) : undefined
+  filters.value[field] = value
+  updateParent()
+}
+
+const handleDateInput = () => {
+  updateParent()
+}
 
 // Watch for changes in props
 watch(() => props.modelValue, (newValue) => {
-  filters.value = {
-    minPrice: newValue.minPrice,
-    maxPrice: newValue.maxPrice,
-    yearBuilt: newValue.yearBuilt,
-    startDate: newValue.startDate || '',
-    endDate: newValue.endDate || '',
+  if (JSON.stringify(newValue) !== JSON.stringify(filters.value)) {
+    filters.value = {
+      minPrice: newValue.minPrice,
+      maxPrice: newValue.maxPrice,
+      yearBuilt: newValue.yearBuilt,
+      startDate: newValue.startDate || '',
+      endDate: newValue.endDate || '',
+    }
   }
 }, { deep: true })
 
@@ -49,6 +72,8 @@ const clearFilters = () => {
     startDate: '',
     endDate: '',
   }
+  // Send update immediately on clear
+  emit('update:modelValue', { ...filters.value })
 }
 
 // Check if any filter is active
@@ -78,6 +103,9 @@ const setLastWeek = () => {
   
   filters.value.startDate = formatDateForInput(start)
   filters.value.endDate = formatDateForInput(end)
+  
+  // Send update immediately on preset button click
+  emit('update:modelValue', { ...filters.value })
 }
 
 // Set default date range to last 30 days
@@ -88,6 +116,9 @@ const setLastMonth = () => {
   
   filters.value.startDate = formatDateForInput(start)
   filters.value.endDate = formatDateForInput(end)
+  
+  // Send update immediately on preset button click
+  emit('update:modelValue', { ...filters.value })
 }
 
 // Set date range to today only
@@ -97,7 +128,17 @@ const setToday = () => {
   
   filters.value.startDate = dateStr
   filters.value.endDate = dateStr
+  
+  // Send update immediately on preset button click
+  emit('update:modelValue', { ...filters.value })
 }
+
+// Cleanup timer when component is unmounted
+onUnmounted(() => {
+  if (debounceTimer.value) {
+    clearTimeout(debounceTimer.value)
+  }
+})
 </script>
 
 <template>
@@ -138,7 +179,8 @@ const setToday = () => {
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
         <input
-          v-model.number="filters.minPrice"
+          :value="filters.minPrice"
+          @input="handleNumberInput($event, 'minPrice')"
           type="number"
           placeholder="Min Price"
           class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
@@ -147,7 +189,8 @@ const setToday = () => {
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Max Price</label>
         <input
-          v-model.number="filters.maxPrice"
+          :value="filters.maxPrice"
+          @input="handleNumberInput($event, 'maxPrice')"
           type="number"
           placeholder="Max Price"
           class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
@@ -158,7 +201,8 @@ const setToday = () => {
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Year Built</label>
         <input
-          v-model.number="filters.yearBuilt"
+          :value="filters.yearBuilt"
+          @input="handleNumberInput($event, 'yearBuilt')"
           type="number"
           placeholder="Year Built"
           class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
@@ -170,6 +214,7 @@ const setToday = () => {
         <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
         <input
           v-model="filters.startDate"
+          @change="handleDateInput"
           type="date"
           class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
         />
@@ -178,10 +223,11 @@ const setToday = () => {
         <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
         <input
           v-model="filters.endDate"
+          @change="handleDateInput"
           type="date"
           class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
         />
       </div>
     </div>
   </div>
-</template> 
+</template>

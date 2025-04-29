@@ -9,27 +9,76 @@ type FilterOptions = {
   endDate?: string
 }
 
+type TabName = '600K - 1.2M' | '1.2M - 5M' | '1M - 4M' | '600K - 1.3M Filtered' | 'Pending Undercontract'
+
+const TAB_COLLECTIONS: Record<TabName, string> = {
+  '600K - 1.2M': '600_1.2M',
+  '1.2M - 5M': '1.2M_5M',
+  '1M - 4M': '1M_4M',
+  '600K - 1.3M Filtered': '600_1.3M',
+  'Pending Undercontract': 'pending_under_contract',
+}
+
 export const usePropertyStore = defineStore('property', () => {
   const properties = ref<Property[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const filters = ref<FilterOptions>({})
   const filteredProperties = ref<Property[]>([])
+  const currentTab = ref<TabName>('600K - 1.2M')
+  const currentCollection = ref(TAB_COLLECTIONS[currentTab.value])
 
-  // Mock API endpoints
+  // API endpoints
   const API_ENDPOINTS = {
     GET_PROPERTIES: '/api/properties',
     UPDATE_NOTE: '/api/properties/note',
     DELETE_NOTE: '/api/properties/note',
   }
 
-  const fetchProperties = async () => {
+  const fetchProperties = async (tab?: TabName) => {
     isLoading.value = true
     error.value = null
+
     try {
-      console.log('Fetching properties from API...')
-      const response = await fetch(API_ENDPOINTS.GET_PROPERTIES)
-      if (!response.ok) throw new Error('Failed to fetch properties')
+      if (tab) {
+        currentTab.value = tab
+        currentCollection.value = TAB_COLLECTIONS[tab]
+      }
+
+      console.log('Fetching properties from collection:', currentCollection.value)
+
+      // Prepare query parameters
+      const queryParams = new URLSearchParams()
+      queryParams.append('collection', currentCollection.value)
+
+      // Add filter parameters
+      if (!!filters.value.minPrice) {
+        queryParams.append('minPrice', filters.value.minPrice.toString())
+      }
+
+      if (!!filters.value.maxPrice) {
+        queryParams.append('maxPrice', filters.value.maxPrice.toString())
+      }
+
+      if (!!filters.value.yearBuilt) {
+        queryParams.append('yearBuilt', filters.value.yearBuilt.toString())
+      }
+
+      if (!!filters.value.startDate) {
+        queryParams.append('startDate', filters.value.startDate)
+      }
+
+      if (!!filters.value.endDate) {
+        queryParams.append('endDate', filters.value.endDate)
+      }
+
+      // Fetch data from API with query parameters
+      const response = await fetch(`${API_ENDPOINTS.GET_PROPERTIES}?${queryParams.toString()}`)
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`)
+      }
+
       const data = await response.json()
       console.log('API Response:', data)
 
@@ -54,13 +103,14 @@ export const usePropertyStore = defineStore('property', () => {
         saves: Number(item.saves) || 0,
         latestSoldYear: Number(item.latestSoldYear) || 0,
         yearBuilt: Number(item.yearBuilt) || 0,
-        updated_at: item.updated_at || new Date().toISOString(),
+        update_at: item.update_at || new Date().toISOString(),
         note: item.note || '',
       })) as Property[]
 
-      // Apply current filters after fetching
-      updateFilteredProperties()
-      console.log('Properties updated:', properties.value)
+      // We're doing server-side filtering now, so we can just use the returned data
+      filteredProperties.value = [...properties.value]
+
+      console.log('Properties updated:', properties.value.length)
     } catch (e) {
       console.error('Error fetching properties:', e)
       error.value = e instanceof Error ? e.message : 'An error occurred'
@@ -76,34 +126,38 @@ export const usePropertyStore = defineStore('property', () => {
     error.value = null
     try {
       console.log('Updating note for property:', propertyId)
-      
-      // In a real app, this would be a POST/PUT request
+
       const response = await fetch(API_ENDPOINTS.UPDATE_NOTE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ propertyId, note }),
+        body: JSON.stringify({
+          propertyId,
+          note,
+          collection: currentCollection.value
+        }),
       })
-      
+
       if (!response.ok) throw new Error('Failed to update note')
-      
-      // Mock response - in real app would come from server
-      const updatedProperty = { propertyId, note }
-      console.log('Note updated:', updatedProperty)
-      
+
+      const result = await response.json()
+      console.log('Note updated:', result)
+
       // Update local state
       const propertyIndex = properties.value.findIndex(p => p.id === propertyId)
       if (propertyIndex !== -1) {
         properties.value[propertyIndex].note = note
-        
+        properties.value[propertyIndex].update_at = result.update_at
+
         // Update filtered properties too
         const filteredIndex = filteredProperties.value.findIndex(p => p.id === propertyId)
         if (filteredIndex !== -1) {
           filteredProperties.value[filteredIndex].note = note
+          filteredProperties.value[filteredIndex].update_at = result.update_at
         }
       }
-      
+
       return true
     } catch (e) {
       console.error('Error updating note:', e)
@@ -119,28 +173,34 @@ export const usePropertyStore = defineStore('property', () => {
     error.value = null
     try {
       console.log('Deleting note for property:', propertyId)
-      
-      // In a real app, this would be a DELETE request
-      const response = await fetch(`${API_ENDPOINTS.DELETE_NOTE}/${propertyId}`, {
+
+      // Add collection as query parameter
+      const queryParams = new URLSearchParams()
+      queryParams.append('collection', currentCollection.value)
+
+      const response = await fetch(`${API_ENDPOINTS.DELETE_NOTE}/${propertyId}?${queryParams.toString()}`, {
         method: 'DELETE',
       })
-      
+
       if (!response.ok) throw new Error('Failed to delete note')
-      
-      console.log('Note deleted for property:', propertyId)
-      
+
+      const result = await response.json()
+      console.log('Note deleted for property:', result)
+
       // Update local state
       const propertyIndex = properties.value.findIndex(p => p.id === propertyId)
       if (propertyIndex !== -1) {
         properties.value[propertyIndex].note = ''
-        
+        properties.value[propertyIndex].update_at = result.update_at
+
         // Update filtered properties too
         const filteredIndex = filteredProperties.value.findIndex(p => p.id === propertyId)
         if (filteredIndex !== -1) {
           filteredProperties.value[filteredIndex].note = ''
+          filteredProperties.value[filteredIndex].update_at = result.update_at
         }
       }
-      
+
       return true
     } catch (e) {
       console.error('Error deleting note:', e)
@@ -154,67 +214,9 @@ export const usePropertyStore = defineStore('property', () => {
   const applyFilters = (options: FilterOptions) => {
     console.log('Applying filters:', options)
     filters.value = options
-    updateFilteredProperties()
-  }
 
-  // Helper function to check if a date is within a range
-  const isDateInRange = (dateStr: string, startDate?: string, endDate?: string): boolean => {
-    if (!dateStr) return false
-    if (!startDate && !endDate) return true
-    
-    const date = new Date(dateStr)
-    
-    if (startDate) {
-      const start = new Date(startDate)
-      if (date < start) return false
-    }
-    
-    if (endDate) {
-      const end = new Date(endDate)
-      // Set to end of day
-      end.setHours(23, 59, 59, 999)
-      if (date > end) return false
-    }
-    
-    return true
-  }
-
-  const updateFilteredProperties = () => {
-    if (!properties.value.length) {
-      console.log('No properties available for filtering')
-      filteredProperties.value = []
-      return
-    }
-
-    console.log('Filtering properties with options:', filters.value)
-    console.log('Total properties before filtering:', properties.value.length)
-
-    const filtered = properties.value.filter(property => {
-      const currentFilters = filters.value
-
-      // Price range filter
-      if (currentFilters.minPrice !== undefined && property.price < currentFilters.minPrice) {
-        return false
-      }
-      if (currentFilters.maxPrice !== undefined && property.price > currentFilters.maxPrice) {
-        return false
-      }
-
-      // Year built filter
-      if (currentFilters.yearBuilt !== undefined && property.yearBuilt !== currentFilters.yearBuilt) {
-        return false
-      }
-
-      // Date range filter
-      if (!isDateInRange(property.updated_at, currentFilters.startDate, currentFilters.endDate)) {
-        return false
-      }
-
-      return true
-    })
-
-    console.log('Properties after filtering:', filtered.length)
-    filteredProperties.value = filtered
+    // With MongoDB integration, we'll refetch data with filters
+    fetchProperties()
   }
 
   // Initialize
@@ -222,21 +224,17 @@ export const usePropertyStore = defineStore('property', () => {
     fetchProperties()
   })
 
-  // Watch for filter changes
-  watch(filters, () => {
-    console.log('Filters changed, updating filtered properties')
-    updateFilteredProperties()
-  }, { deep: true })
-
   return {
     properties,
     filteredProperties,
     isLoading,
     error,
     filters,
+    currentTab,
+    currentCollection,
     fetchProperties,
     applyFilters,
     updateNote,
     deleteNote,
   }
-}) 
+})

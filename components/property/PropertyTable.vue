@@ -124,8 +124,8 @@ const columns = [
         }, 'View') : 'N/A'
     },
   }),
-  columnHelper.accessor('updated_at', {
-    id: 'updated_at',
+  columnHelper.accessor('update_at', {
+    id: 'update_at',
     header: 'Updated At',
     cell: info => info.getValue(),
   }),
@@ -262,7 +262,7 @@ const handleNoteUpdate = async (propertyId: string, note: string) => {
 </script>
 
 <template>
-  <div class="bg-white rounded-lg shadow overflow-hidden">
+  <div class="bg-white rounded-lg shadow overflow-hidden relative">
     <!-- Loading Animation -->
     <div
       v-if="isLoading"
@@ -313,7 +313,7 @@ const handleNoteUpdate = async (propertyId: string, note: string) => {
                   :key="cell.id"
                   class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                 >
-                  <template v-if="cell.column.id === 'updated_at'">
+                  <template v-if="cell.column.id === 'update_at'">
                     <div class="flex items-center">
                       <span>{{ formatDate(getUpdatedAt(cell)) }}</span>
                       <span
@@ -326,8 +326,8 @@ const handleNoteUpdate = async (propertyId: string, note: string) => {
                   </template>
                   <template v-else-if="cell.column.id === 'actions'">
                     <RowActions
-                      :property-id="(cell.getValue() as ActionCellData)?.id || ''"
-                      :note="(cell.getValue() as ActionCellData)?.note || ''"
+                      :property-id="row.original.id"
+                      :note="row.original.note || ''"
                       @update:note="handleNoteUpdate"
                     />
                   </template>
@@ -484,4 +484,4 @@ const handleNoteUpdate = async (propertyId: string, note: string) => {
       </div>
     </div>
   </div>
-</template> 
+</template>

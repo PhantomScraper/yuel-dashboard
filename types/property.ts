@@ -14,6 +14,6 @@ export type Property = {
   saves: number
   latestSoldYear: number
   yearBuilt: number
-  updated_at: string
-  note: string
+  update_at: string
+  note?: string
 } 

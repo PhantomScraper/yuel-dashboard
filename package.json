@@ -14,6 +14,7 @@
     "@pinia/nuxt": "^0.11.0",
     "@tanstack/vue-table": "^8.21.3",
     "@vueuse/core": "^13.1.0",
+    "mongodb": "^6.16.0",
     "nuxt": "^3.16.2",
     "pinia": "^3.0.2",
     "radix-vue": "^1.9.17",
