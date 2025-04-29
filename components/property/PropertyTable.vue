@@ -159,7 +159,7 @@ const sorting = ref<SortingState>([])
 const columnFilters = ref<ColumnFiltersState>([])
 const rowSelection = ref({})
 const pageIndex = ref(0)
-const pageSize = ref(10)
+const pageSize = ref(50)
 
 // Track expanded rows (for note display and price history)
 const expandedRows = ref<Record<string, boolean>>({})
