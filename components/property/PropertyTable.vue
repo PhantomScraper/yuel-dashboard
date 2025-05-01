@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import {
   createColumnHelper,
   FlexRender,
@@ -155,7 +155,10 @@ const columns = [
   }),
 ]
 
-const sorting = ref<SortingState>([])
+// Initialize with a default sort (update_at desc)
+const sorting = ref<SortingState>([
+  { id: 'update_at', desc: true }
+])
 const columnFilters = ref<ColumnFiltersState>([])
 const rowSelection = ref({})
 const pageIndex = ref(0)
@@ -203,10 +206,17 @@ const cancelEditNote = () => {
   editingNote.value = null
 }
 
+// Function to apply default sorting
+const applyDefaultSorting = () => {
+  console.log('Applying default sorting (update_at desc)')
+  sorting.value = [{ id: 'update_at', desc: true }]
+}
+
 // Create reactive table that will rebuild when data or columns change
 const table = computed(() => {
   console.log('Building table with data:', props.data.length, 'items')
   console.log('Visible columns:', props.visibleColumns)
+  console.log('Current sorting:', sorting.value)
   
   const visibleColumnsList = props.visibleColumns || columns.map(col => col.id || '')
   const filteredColumns = columns.filter(col => 
@@ -251,11 +261,23 @@ const table = computed(() => {
   })
 })
 
-// Reset pagination when data changes
+// Apply default sorting on component mount
+onMounted(() => {
+  applyDefaultSorting()
+})
+
+// Reset pagination and apply default sorting when data changes or tab changes
 watch(() => props.data, () => {
-  console.log('Data changed, resetting pagination')
+  console.log('Data changed, resetting pagination and applying default sorting')
   pageIndex.value = 0
+  applyDefaultSorting()
 }, { deep: true })
+
+// Watch for tab changes and apply default sorting
+watch(() => propertyStore.currentTab, () => {
+  console.log('Tab changed, applying default sorting')
+  applyDefaultSorting()
+})
 
 const getUpdatedAt = (cell: any): string => {
   const value = cell.getValue()
