@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
       filters.priceChanges = { $exists: true, $type: 'array' }
       filters.$expr = { $gt: [{ $size: "$priceChanges" }, 1] }
     }
-
+    filters.rawHomeStatusCd =  { $nin: ["NotForSale", "ForRent"] }
     // Connect to MongoDB
     const { db } = await connectToDatabase()
     const collection = db.collection<Property>(collectionName)
