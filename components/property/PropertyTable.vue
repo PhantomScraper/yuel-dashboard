@@ -447,7 +447,7 @@ const getPriceChangeInfo = (property: Property) => {
                           </tr>
                           
                           <!-- Historical prices -->
-                          <tr v-for="(change, index) in row.original.priceChanges" :key="index">
+                          <tr v-for="(change, index) in row.original.priceChanges.filter((item, index, self) => index === self.findIndex(i => i.price === item.price))" :key="index">
                             <td class="px-2 py-1 border border-blue-100">
                               {{ formatDate(change.updated_at || change.update_at) }}
                             </td>

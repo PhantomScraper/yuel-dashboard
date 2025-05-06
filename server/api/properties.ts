@@ -34,8 +34,28 @@ export default defineEventHandler(async (event) => {
       ];
     }
     if (query.priceChanges === 'true') {
-      filters.priceChanges = { $exists: true, $type: 'array' }
-      filters.$expr = { $gt: [{ $size: "$priceChanges" }, 1] }
+      // Kiểm tra cả hai điều kiện trong một query
+      filters.$and = [
+        // Kiểm tra có ít nhất 2 phần tử
+        { 'priceChanges.1': { $exists: true } },
+        
+        // Kiểm tra có ít nhất 2 giá trị price khác nhau bằng cách:
+        { $expr: {
+            $gt: [
+              { $size: { 
+                $setUnion: [
+                  { $map: { 
+                    input: "$priceChanges", 
+                    as: "pc", 
+                    in: "$$pc.price" 
+                  }}
+                ] 
+              }},
+              1
+            ]
+          }
+        }
+      ];
     }
     filters.rawHomeStatusCd =  { $nin: ["NotForSale", "ForRent"] }
     // Connect to MongoDB
