@@ -38,6 +38,10 @@ export const usePropertyStore = defineStore('property', () => {
     DELETE_NOTE: '/api/properties/note',
   }
 
+  const shouldSortByCreatedAt = computed(() => {
+    return currentTab.value === '600K - 1.2M' || currentTab.value === '1.2M - 5M'
+  })
+
   const fetchProperties = async (tab?: TabName) => {
     isLoading.value = true
     error.value = null
@@ -111,6 +115,7 @@ export const usePropertyStore = defineStore('property', () => {
         latestSoldYear: Number(item.latestSoldYear) || 0,
         yearBuilt: Number(item.yearBuilt) || 0,
         update_at: item.update_at || new Date().toISOString(),
+        insertedAt: item.insertedAt || new Date().toISOString(),
         note: item.note || '',
         priceChanges: item.priceChanges || [],
       })) as Property[]

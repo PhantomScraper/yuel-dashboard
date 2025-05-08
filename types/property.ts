@@ -15,6 +15,7 @@ export type Property = {
   latestSoldYear: number
   yearBuilt: number
   update_at: string
+  insertedAt?: string
   note?: string
   priceChanges?: string[]
 } 

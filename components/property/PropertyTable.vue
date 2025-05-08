@@ -39,6 +39,14 @@ console.log('Table Props:', {
 
 const columnHelper = createColumnHelper<Property>()
 
+const shouldShowCreatedAt = computed(() => {
+  return propertyStore.currentTab === '600K - 1.2M' || propertyStore.currentTab === '1.2M - 5M'
+})
+
+const dateFieldName = computed(() => {
+  return shouldShowCreatedAt.value ? 'insertedAt' : 'update_at'
+})
+
 const isToday = (date: unknown): boolean => {
   if (!date || typeof date !== 'string') return false
   const today = new Date()
@@ -137,9 +145,15 @@ const columns = [
     },
   }),
   columnHelper.accessor('update_at', {
-    id: 'update_at',
-    header: 'Updated At',
-    cell: info => info.getValue(),
+    id: 'date_field',
+    header: info => shouldShowCreatedAt.value ? 'Created At' : 'Updated At',
+    cell: info => {
+      const row = info.row.original
+      const dateValue = shouldShowCreatedAt.value ? 
+                         (row.insertedAt || row.update_at) : // Fallback to update_at if insertedAt doesn't exist
+                         row.update_at
+      return dateValue
+    },
   }),
   columnHelper.display({
     id: 'actions',
@@ -155,9 +169,9 @@ const columns = [
   }),
 ]
 
-// Initialize with a default sort (update_at desc)
+// Initialize with a default sort (date field desc)
 const sorting = ref<SortingState>([
-  { id: 'update_at', desc: true }
+  { id: 'date_field', desc: true }
 ])
 const columnFilters = ref<ColumnFiltersState>([])
 const rowSelection = ref({})
@@ -208,8 +222,14 @@ const cancelEditNote = () => {
 
 // Function to apply default sorting
 const applyDefaultSorting = () => {
-  console.log('Applying default sorting (update_at desc)')
-  sorting.value = [{ id: 'update_at', desc: true }]
+  console.log('Applying default sorting (date field desc)')
+  sorting.value = [{ id: 'date_field', desc: true }]
+}
+
+const getDateValue = (row: Property): string => {
+  return shouldShowCreatedAt.value ? 
+    (row.insertedAt || row.update_at || '') : 
+    (row.update_at || '')
 }
 
 // Create reactive table that will rebuild when data or columns change
@@ -220,7 +240,7 @@ const table = computed(() => {
   
   const visibleColumnsList = props.visibleColumns || columns.map(col => col.id || '')
   const filteredColumns = columns.filter(col => 
-    col.id === 'actions' || (col.id && visibleColumnsList.includes(col.id))
+    col.id === 'actions' || (col.id && visibleColumnsList.includes(col.id === 'date_field' ? 'update_at' : col.id))
   )
   
   return useVueTable({
@@ -278,11 +298,6 @@ watch(() => propertyStore.currentTab, () => {
   console.log('Tab changed, applying default sorting')
   applyDefaultSorting()
 })
-
-const getUpdatedAt = (cell: any): string => {
-  const value = cell.getValue()
-  return typeof value === 'string' ? value : ''
-}
 
 // Debug logs for data changes
 watch(() => props.data, (newData) => {
@@ -375,11 +390,11 @@ const getPriceChangeInfo = (property: Property) => {
                   :key="cell.id"
                   class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                 >
-                  <template v-if="cell.column.id === 'update_at'">
+                  <template v-if="cell.column.id === 'date_field'">
                     <div class="flex items-center">
-                      <span>{{ formatDate(getUpdatedAt(cell)) }}</span>
+                      <span>{{ formatDate(getDateValue(row.original)) }}</span>
                       <span
-                        v-if="isToday(getUpdatedAt(cell))"
+                        v-if="isToday(getDateValue(row.original))"
                         class="ml-2 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full"
                       >
                         Today

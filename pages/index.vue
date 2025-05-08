@@ -23,6 +23,10 @@ const tabs = ref([
   ])
 const activeTab = ref('600K - 1.2M')
 
+const isRegularTab = computed(() => {
+  return activeTab.value === '600K - 1.2M' || activeTab.value === '1.2M - 5M'
+})
+
 // Filter states
 const filters = ref({
   minPrice: undefined as number | undefined,
@@ -71,12 +75,18 @@ const isToday = (dateString: string): boolean => {
   )
 }
 
-// Count properties updated today
 const totalUpdatedToday = computed(() => {
   if (!propertyStore.filteredProperties.length) return 0
-  return propertyStore.filteredProperties.filter(property => 
-    isToday(property.update_at)
-  ).length
+  
+  return propertyStore.filteredProperties.filter(property => {
+    if (isRegularTab.value) {
+      // For regular tabs, check insertedAt
+      return isToday(property.insertedAt)
+    } else {
+      // For tracking tabs, check update_at
+      return isToday(property.update_at)
+    }
+  }).length
 })
 
 const handleTabChange = async (tab: string) => {
