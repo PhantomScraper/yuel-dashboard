@@ -142,7 +142,7 @@ async function runPriceTracking(): Promise<void> {
 
     try {
         // Get all properties
-        const properties = (await collection.find({ price: 0 }).toArray());
+        const properties = (await collection.find({}).toArray());
         console.log(`Found ${properties.length} properties to process`);
 
         const batchSize = 20;
