@@ -144,16 +144,14 @@ const columns = [
         }, 'View') : 'N/A'
     },
   }),
-  columnHelper.accessor('update_at', {
+  columnHelper.accessor(row => {
+    return shouldShowCreatedAt.value ? 
+      row.insertedAt : 
+      row.update_at
+  }, {
     id: 'date_field',
     header: info => shouldShowCreatedAt.value ? 'Created At' : 'Updated At',
-    cell: info => {
-      const row = info.row.original
-      const dateValue = shouldShowCreatedAt.value ? 
-                         (row.insertedAt || row.update_at) : // Fallback to update_at if insertedAt doesn't exist
-                         row.update_at
-      return dateValue
-    },
+    cell: info => info.getValue(),
   }),
   columnHelper.display({
     id: 'actions',
@@ -227,9 +225,11 @@ const applyDefaultSorting = () => {
 }
 
 const getDateValue = (row: Property): string => {
-  return shouldShowCreatedAt.value ? 
-    (row.insertedAt || row.update_at || '') : 
-    (row.update_at || '')
+  const dateValue = shouldShowCreatedAt.value ? 
+    row.insertedAt : 
+    row.update_at;
+  
+  return dateValue || '';
 }
 
 // Create reactive table that will rebuild when data or columns change
@@ -238,10 +238,12 @@ const table = computed(() => {
   console.log('Visible columns:', props.visibleColumns)
   console.log('Current sorting:', sorting.value)
   
-  const visibleColumnsList = props.visibleColumns || columns.map(col => col.id || '')
-  const filteredColumns = columns.filter(col => 
-    col.id === 'actions' || (col.id && visibleColumnsList.includes(col.id === 'date_field' ? 'update_at' : col.id))
-  )
+const visibleColumnsList = props.visibleColumns || columns.map(col => col.id || '')
+const filteredColumns = columns.filter(col => {
+  if (col.id === 'actions') return true;
+  if (col.id === 'date_field') return visibleColumnsList.includes('update_at') || visibleColumnsList.includes('insertedAt');
+  return col.id && visibleColumnsList.includes(col.id);
+})
   
   return useVueTable({
     get data() {

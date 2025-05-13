@@ -93,8 +93,8 @@ export default defineEventHandler(async (event) => {
         return new Date(b.update_at || '').getTime() - new Date(a.update_at || '').getTime();
       } else {
         // For regular tabs, sort by insertedAt
-        return new Date(b.insertedAt || b.update_at || '').getTime() -
-          new Date(a.insertedAt || a.update_at || '').getTime();
+        return new Date(b.insertedAt || '').getTime() -
+          new Date(a.insertedAt || '').getTime();
       }
     });
 
