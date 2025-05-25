@@ -54,6 +54,33 @@ const columns = [
 
 const visibleColumns = ref(columns.map(col => col.id))
 
+// Download all links function
+const downloadAllLinks = () => {
+  // Filter out properties that don't have detailUrl or have empty/null detailUrl
+  const validLinks = propertyStore.filteredProperties
+    .filter(property => property.detailUrl && property.detailUrl.trim() !== '')
+    .map(property => property.detailUrl)
+  
+  if (validLinks.length === 0) {
+    alert('No valid links found to download')
+    return
+  }
+  
+  // Create content with each link on a new line
+  const content = validLinks.join('\n')
+  
+  // Create blob and download
+  const blob = new Blob([content], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `property-links-${activeTab.value.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 // Watch for filter changes
 watch(filters, (newFilters) => {
   console.log('Filters changed in page:', newFilters)
@@ -147,6 +174,20 @@ onMounted(() => {
 
         <!-- Filters -->
         <PropertyFilters v-model="filters" class="mb-8" />
+
+        <!-- Download Button Section -->
+        <div class="mb-4">
+          <button
+            @click="downloadAllLinks"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+            :disabled="!propertyStore.filteredProperties || propertyStore.filteredProperties.length === 0"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download All Links
+          </button>
+        </div>
 
         <PropertyTable
           :data="propertyStore.filteredProperties"
