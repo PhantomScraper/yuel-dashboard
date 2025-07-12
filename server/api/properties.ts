@@ -87,10 +87,15 @@ export default defineEventHandler(async (event) => {
     const properties = await collection.find(filters).toArray();
     properties.forEach(item => {
       if (item.priceChanges && item.priceChanges.length > 0) {
-        const latest = item.priceChanges.reduce((max: any, current: any) => {
-          return current.updated_at > max.updated_at ? current : max;
-        }) as any;
-        item.update_at = latest.updated_at;
+        const maxPrice = Math.max(...item.priceChanges.map(p => p.price));
+
+        const candidates = item.priceChanges.filter(p => p.price === maxPrice);
+
+        const earliest = candidates.reduce((min, current) => {
+          return current.updated_at < min.updated_at ? current : min;
+        });
+
+        item.update_at = earliest.updated_at;
       }
     });
     // Sort by insertedAt or update_at depending on the tab
