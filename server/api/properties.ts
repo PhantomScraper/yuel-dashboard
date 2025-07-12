@@ -85,7 +85,14 @@ export default defineEventHandler(async (event) => {
 
     // Fetch properties with filters
     const properties = await collection.find(filters).toArray();
-
+    properties.forEach(item => {
+      if (item.priceChanges && item.priceChanges.length > 0) {
+        const latest = item.priceChanges.reduce((max: any, current: any) => {
+          return current.updated_at > max.updated_at ? current : max;
+        }) as any;
+        item.update_at = latest.updated_at;
+      }
+    });
     // Sort by insertedAt or update_at depending on the tab
     const sortedProperties = properties.sort((a: any, b: any) => {
       if (query.priceChanges === 'true') {
