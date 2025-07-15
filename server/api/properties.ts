@@ -87,12 +87,30 @@ export default defineEventHandler(async (event) => {
     const properties = await collection.find(filters).toArray();
     properties.forEach(item => {
       if (item.priceChanges && item.priceChanges.length > 0) {
-        const latest = item.priceChanges.reduce((max: any, current: any) => {
-          return current.updated_at > max.updated_at ? current : max;
-        }) as any;
-        item.update_at = latest.updated_at;
+        const priceChanges = item.priceChanges;
+        const currentPrice = priceChanges[priceChanges.length - 1].price;
+
+        let lastChangeDate = null;
+
+        for (let i = priceChanges.length - 1; i >= 0; i--) {
+          if (priceChanges[i].price !== currentPrice) {
+            // lần khác giá gần nhất
+            if (i + 1 < priceChanges.length) {
+              lastChangeDate = priceChanges[i + 1].updated_at;
+            }
+            break;
+          }
+        }
+
+        // Nếu không tìm thấy khác giá thì nó chưa bao giờ đổi => dùng bản ghi đầu tiên
+        if (!lastChangeDate && priceChanges[0].price === currentPrice) {
+          lastChangeDate = priceChanges[0].updated_at;
+        }
+
+        item.update_at = lastChangeDate;
       }
     });
+
     // Sort by insertedAt or update_at depending on the tab
     const sortedProperties = properties.sort((a: any, b: any) => {
       if (query.priceChanges === 'true') {
