@@ -57,9 +57,9 @@ const visibleColumns = ref(columns.map(col => col.id))
 // Download all links function
 const downloadAllLinks = () => {
   // Filter out properties that don't have detailUrl or have empty/null detailUrl
-  const validLinks = propertyStore.filteredProperties
-    .filter(property => property.detailUrl && property.detailUrl.trim() !== '')
-    .map(property => property.detailUrl)
+  const validLinks = totalUpdatedToday.value
+    .filter((property: Property) => property.detailUrl && property.detailUrl.trim() !== '')
+    .map((property: Property) => property.detailUrl)
   
   if (validLinks.length === 0) {
     alert('No valid links found to download')
@@ -103,7 +103,7 @@ const isToday = (dateString: string): boolean => {
 }
 
 const totalUpdatedToday = computed(() => {
-  if (!propertyStore.filteredProperties.length) return 0
+  if (!propertyStore.filteredProperties.length) return []
   
   return propertyStore.filteredProperties.filter(property => {
     if (isRegularTab.value) {
@@ -113,12 +113,12 @@ const totalUpdatedToday = computed(() => {
       // For tracking tabs, check update_at
       return isToday(property.update_at)
     }
-  }).length
+  })
 })
 
 const handleTabChange = async (tab: string) => {
   activeTab.value = tab
-  await propertyStore.fetchProperties(activeTab.value)
+  await propertyStore.fetchProperties(tab as TabName)
 }
 
 const handleNoteUpdate = async (propertyId: string, note: string) => {
@@ -159,7 +159,7 @@ onMounted(() => {
         <!-- Stats Section -->
         <PropertyStats
           :total-properties="totalProperties"
-          :total-updated-today="totalUpdatedToday"
+          :total-updated-today="totalUpdatedToday.length"
           class="mb-8"
         />
 
@@ -190,7 +190,7 @@ onMounted(() => {
         </div>
 
         <PropertyTable
-          :data="propertyStore.filteredProperties"
+          :data="totalUpdatedToday"
           :is-loading="propertyStore.isLoading"
           :error="propertyStore.error"
           :visible-columns="visibleColumns"
