@@ -12,7 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string[]): void
 }>()
-
+ 
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const visibleColumns = ref<string[]>(props.modelValue)
