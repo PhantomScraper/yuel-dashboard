@@ -57,7 +57,7 @@ const visibleColumns = ref(columns.map(col => col.id))
 // Download all links function
 const downloadAllLinks = () => {
   // Filter out properties that don't have detailUrl or have empty/null detailUrl
-  const validLinks = totalUpdatedToday.value
+  const validLinks = displayData.value
     .filter((property: Property) => property.detailUrl && property.detailUrl.trim() !== '')
     .map((property: Property) => property.detailUrl)
   
@@ -87,8 +87,15 @@ watch(filters, (newFilters) => {
   propertyStore.applyFilters(newFilters)
 }, { deep: true })
 
-// Stats computation
-const totalProperties = computed(() => propertyStore.filteredProperties.length || 0)
+const hasActiveFilters = computed(() => {
+  return (
+    filters.value.minPrice !== undefined ||
+    filters.value.maxPrice !== undefined ||
+    filters.value.yearBuilt !== undefined ||
+    !!filters.value.startDate ||
+    !!filters.value.endDate
+  )
+})
 
 // Function to check if a date is today
 const isToday = (dateString: string): boolean => {
@@ -103,9 +110,9 @@ const isToday = (dateString: string): boolean => {
 }
 
 const totalUpdatedToday = computed(() => {
-  if (!propertyStore.filteredProperties.length) return []
+  if (!propertyStore.properties.length) return []
   
-  return propertyStore.filteredProperties.filter(property => {
+  return propertyStore.properties.filter(property => {
     if (isRegularTab.value) {
       // For regular tabs, check insertedAt
       return isToday(property.insertedAt)
@@ -116,8 +123,23 @@ const totalUpdatedToday = computed(() => {
   })
 })
 
+const displayData = computed(() => {
+  if (hasActiveFilters.value) {
+    return propertyStore.filteredProperties
+  } else {
+    return totalUpdatedToday.value
+  }
+})
+
 const handleTabChange = async (tab: string) => {
   activeTab.value = tab
+  filters.value = {
+    minPrice: undefined,
+    maxPrice: undefined,
+    yearBuilt: undefined,
+    startDate: '',
+    endDate: '',
+  }
   await propertyStore.fetchProperties(tab as TabName)
 }
 
@@ -125,11 +147,6 @@ const handleNoteUpdate = async (propertyId: string, note: string) => {
   console.log('Update note:', propertyId, note)
   await propertyStore.updateNote(propertyId, note)
 }
-
-// Debug logs
-watch(() => propertyStore.filteredProperties, (newData) => {
-  console.log('Filtered properties changed:', newData)
-}, { deep: true })
 
 // Fetch properties on component mount
 onMounted(() => {
@@ -158,7 +175,7 @@ onMounted(() => {
 
         <!-- Stats Section -->
         <PropertyStats
-          :total-properties="totalProperties"
+          :total-properties="propertyStore.properties.length"
           :total-updated-today="totalUpdatedToday.length"
           class="mb-8"
         />
@@ -180,7 +197,7 @@ onMounted(() => {
           <button
             @click="downloadAllLinks"
             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
-            :disabled="!propertyStore.filteredProperties || propertyStore.filteredProperties.length === 0"
+            :disabled="!displayData || displayData.length === 0"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -190,7 +207,7 @@ onMounted(() => {
         </div>
 
         <PropertyTable
-          :data="totalUpdatedToday"
+          :data="displayData"
           :is-loading="propertyStore.isLoading"
           :error="propertyStore.error"
           :visible-columns="visibleColumns"
