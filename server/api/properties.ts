@@ -23,17 +23,7 @@ export default defineEventHandler(async (event) => {
     }
 
     if (query.startDate && query.endDate) {
-      if (query.priceChanges === 'true') {
-        filters.$or = [
-          {
-            update_at: {
-              $gte: `${query.startDate}T00:00:00.000Z`,
-              $lte: `${query.endDate}T23:59:59.999Z`
-            }
-          },
-          { update_at: null }
-        ];
-      } else {
+      if (query.priceChanges !== 'true') {
         // For regular tabs, use insertedAt for date filters
         filters.$or = [
           {
@@ -111,8 +101,20 @@ export default defineEventHandler(async (event) => {
       }
     });
 
+    // Filter theo date range SAU KHI đã tính toán update_at
+    let filteredProperties = properties;
+    if (query.priceChanges === 'true' && query.startDate && query.endDate) {
+      const startDate = `${query.startDate}T00:00:00`;
+      const endDate = `${query.endDate}T23:59:59`;
+
+      filteredProperties = properties.filter(item => {
+        if (!item.update_at) return false;
+        return item.update_at >= startDate && item.update_at <= endDate;
+      });
+    }
+
     // Sort by insertedAt or update_at depending on the tab
-    const sortedProperties = properties.sort((a: any, b: any) => {
+    const sortedProperties = filteredProperties.sort((a: any, b: any) => {
       if (query.priceChanges === 'true') {
         // For price tracking tabs, sort by update_at
         return new Date(b.update_at || '').getTime() - new Date(a.update_at || '').getTime();

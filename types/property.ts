@@ -17,5 +17,5 @@ export type Property = {
   update_at: string
   insertedAt?: string
   note?: string
-  priceChanges?: string[]
+  priceChanges?: any[]
 } 
