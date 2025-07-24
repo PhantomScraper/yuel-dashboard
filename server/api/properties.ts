@@ -22,19 +22,21 @@ export default defineEventHandler(async (event) => {
       filters.yearBuilt = Number(query.yearBuilt)
     }
 
-    if (query.startDate && query.endDate) {
-      if (query.priceChanges !== 'true') {
-        // For regular tabs, use insertedAt for date filters
-        filters.$or = [
-          {
-            insertedAt: {
-              $gte: new Date(`${query.startDate}T00:00:00.000Z`),
-              $lte: new Date(`${query.endDate}T23:59:59.999Z`)
-            }
-          },
-          { insertedAt: null }
-        ];
+    if (query.priceChanges !== 'true' && (query.startDate || query.endDate)) {
+      const dateFilter: any = {}
+      
+      if (query.startDate) {
+        dateFilter.$gte = new Date(`${query.startDate}T00:00:00.000Z`)
       }
+      
+      if (query.endDate) {
+        dateFilter.$lte = new Date(`${query.endDate}T23:59:59.999Z`)
+      }
+      
+      filters.$or = [
+        { insertedAt: dateFilter },
+        { insertedAt: null }
+      ]
     }
 
     if (query.priceChanges === 'true') {
@@ -103,13 +105,24 @@ export default defineEventHandler(async (event) => {
 
     // Filter theo date range SAU KHI đã tính toán update_at
     let filteredProperties = properties;
-    if (query.priceChanges === 'true' && query.startDate && query.endDate) {
-      const startDate = `${query.startDate}T00:00:00`;
-      const endDate = `${query.endDate}T23:59:59`;
-
+    if (query.priceChanges === 'true' && (query.startDate || query.endDate)) {
       filteredProperties = properties.filter(item => {
         if (!item.update_at) return false;
-        return item.update_at >= startDate && item.update_at <= endDate;
+        
+        const updateDate = item.update_at;
+        let matchesDateRange = true;
+        
+        if (query.startDate) {
+          const startDate = `${query.startDate}T00:00:00`;
+          matchesDateRange = matchesDateRange && updateDate >= startDate;
+        }
+        
+        if (query.endDate) {
+          const endDate = `${query.endDate}T23:59:59`;
+          matchesDateRange = matchesDateRange && updateDate <= endDate;
+        }
+        
+        return matchesDateRange;
       });
     }
 
