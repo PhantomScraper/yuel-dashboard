@@ -357,7 +357,6 @@ const fetchPrediction = async (property: Property) => {
         area_sqft: property.area,
         buy_price: buyPrice,
         year_built: property.yearBuilt,
-        num_price_changes: property.priceChanges?.length || 0,
         years_since_prior_sale: property.latestSoldYear
           ? 2026 - property.latestSoldYear
           : undefined,
@@ -554,17 +553,16 @@ const getPriceChangeInfo = (property: Property) => {
                       </svg>
                       <span class="text-sm font-medium">Analyzing flip potential...</span>
                     </div>
-                    <div class="flex-1 grid grid-cols-4 gap-3">
-                      <div v-for="n in 4" :key="n" class="h-10 bg-purple-100 rounded-lg animate-pulse"></div>
+                    <div class="flex-1 grid grid-cols-3 gap-3">
+                      <div v-for="n in 3" :key="n" class="h-10 bg-purple-100 rounded-lg animate-pulse"></div>
                     </div>
                   </div>
 
                   <!-- Prediction results -->
                   <div v-else-if="predictions[row.original.id]" class="flex items-start justify-between">
-                    <div class="grid grid-cols-4 gap-4 flex-1">
-
+                    <div class="grid grid-cols-3 gap-4 flex-1">
                       <div class="bg-white rounded-lg p-3 border border-purple-200 shadow-sm">
-                        <div class="text-xs text-gray-500 uppercase tracking-wide">Profit</div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Predicted Profit</div>
                         <div class="text-lg font-bold text-green-700">${{ predictions[row.original.id].predicted_profit.toLocaleString() }}</div>
                       </div>
                       <div class="bg-white rounded-lg p-3 border border-purple-200 shadow-sm">
@@ -572,11 +570,7 @@ const getPriceChangeInfo = (property: Property) => {
                         <div class="text-lg font-bold text-blue-700">{{ predictions[row.original.id].predicted_roi_pct }}%</div>
                       </div>
                       <div class="bg-white rounded-lg p-3 border border-purple-200 shadow-sm">
-                        <div class="text-xs text-gray-500 uppercase tracking-wide">Time to Flip</div>
-                        <div class="text-lg font-bold text-orange-700">{{ predictions[row.original.id].predicted_months }} mo</div>
-                      </div>
-                      <div class="bg-white rounded-lg p-3 border border-purple-200 shadow-sm">
-                        <div class="text-xs text-gray-500 uppercase tracking-wide">Sell Price</div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Predicted Sell Price</div>
                         <div class="text-lg font-bold text-gray-800">${{ predictions[row.original.id].expected_sell_price.toLocaleString() }}</div>
                       </div>
                     </div>
