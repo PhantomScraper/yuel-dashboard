@@ -11,7 +11,7 @@ import {
   type SortingState,
   type ColumnFiltersState,
 } from '@tanstack/vue-table'
-import type { Property } from '~/types/property'
+import type { Property, FlipPrediction } from '~/types/property'
 import RowActions from './RowActions.vue'
 import { usePropertyStore } from '~/stores/property'
 
@@ -317,6 +317,77 @@ const handleNoteUpdate = async (propertyId: string, note: string) => {
   emit('update:note', propertyId, note)
 }
 
+// ─── Flip Prediction ───
+const PREDICT_API = 'https://scfy4nwqr2.execute-api.us-east-1.amazonaws.com/default/z-predict'
+const predictionLoading = ref<Record<string, boolean>>({})
+const predictions = ref<Record<string, FlipPrediction>>({})
+const expandedPredictions = ref<Record<string, boolean>>({})
+
+const fetchPrediction = async (property: Property) => {
+  const id = property.id
+  if (predictionLoading.value[id]) return
+  predictionLoading.value[id] = true
+  expandedPredictions.value[id] = true
+  try {
+    const res = await fetch(PREDICT_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        city: property.addressCity,
+        beds: property.beds,
+        baths: property.baths,
+        area_sqft: property.area,
+        buy_price: property.price,
+        year_built: property.yearBuilt,
+      }),
+    })
+    const data = await res.json()
+    if (data.prediction) {
+      predictions.value[id] = data.prediction
+    }
+  } catch (e) {
+    console.error('Prediction failed:', e)
+  } finally {
+    predictionLoading.value[id] = false
+  }
+}
+
+const fetchPredictionsForPage = async () => {
+  const rows = table.value.getRowModel().rows
+  const pending = rows.filter(r => !predictions.value[r.original.id] && !predictionLoading.value[r.original.id])
+  if (!pending.length) return
+  // fire all in parallel, stagger slightly to avoid Lambda throttle
+  const BATCH = 20
+  for (let i = 0; i < pending.length; i += BATCH) {
+    const batch = pending.slice(i, i + BATCH)
+    await Promise.all(batch.map(r => fetchPrediction(r.original)))
+  }
+}
+
+// Auto-fetch when page data changes (new data load, pagination, tab switch)
+watch(
+  () => table.value.getRowModel().rows.map(r => r.original.id).join(','),
+  () => { fetchPredictionsForPage() },
+)
+
+const togglePrediction = (property: Property) => {
+  const id = property.id
+  if (predictions.value[id]) {
+    expandedPredictions.value[id] = !expandedPredictions.value[id]
+  } else {
+    fetchPrediction(property)
+  }
+}
+
+const ratingColor = (rating: string) => {
+  switch (rating) {
+    case 'Excellent': return 'bg-green-100 text-green-800'
+    case 'Good': return 'bg-blue-100 text-blue-800'
+    case 'Fair': return 'bg-yellow-100 text-yellow-800'
+    default: return 'bg-red-100 text-red-800'
+  }
+}
+
 // Check if a property has price history data
 const hasPriceChanges = (property: Property): boolean => {
   return !!property.priceChanges && 
@@ -410,6 +481,26 @@ const getPriceChangeInfo = (property: Property) => {
                   </template>
                   <template v-else-if="cell.column.id === 'actions'">
                     <div class="flex items-center space-x-2">
+                      <!-- Predict button -->
+                      <button
+                        @click="togglePrediction(row.original)"
+                        :disabled="predictionLoading[row.original.id]"
+                        class="px-2 py-1 text-xs font-medium rounded-full flex items-center transition-colors"
+                        :class="predictions[row.original.id]
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                          : 'bg-purple-100 text-purple-800 hover:bg-purple-200'"
+                      >
+                        <!-- Loading spinner -->
+                        <svg v-if="predictionLoading[row.original.id]" class="animate-spin h-3.5 w-3.5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <!-- Chart icon -->
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        {{ predictionLoading[row.original.id] ? 'Loading...' : predictions[row.original.id] ? 'Prediction' : 'Predict' }}
+                      </button>
                       <RowActions
                         :property-id="row.original.id"
                         :note="row.original.note || ''"
@@ -428,6 +519,68 @@ const getPriceChangeInfo = (property: Property) => {
                 </td>
               </tr>
               
+              <!-- Prediction result row -->
+              <tr v-if="expandedPredictions[row.original.id]" class="bg-purple-50">
+                <td :colspan="row.getVisibleCells().length" class="px-6 py-3">
+                  <!-- Loading skeleton -->
+                  <div v-if="predictionLoading[row.original.id]" class="flex items-center space-x-4">
+                    <div class="flex items-center text-purple-600">
+                      <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                      <span class="text-sm font-medium">Analyzing flip potential...</span>
+                    </div>
+                    <div class="flex-1 grid grid-cols-4 gap-3">
+                      <div v-for="n in 4" :key="n" class="h-10 bg-purple-100 rounded-lg animate-pulse"></div>
+                    </div>
+                  </div>
+
+                  <!-- Prediction results -->
+                  <div v-else-if="predictions[row.original.id]" class="flex items-start justify-between">
+                    <div class="grid grid-cols-4 gap-4 flex-1">
+
+                      <div class="bg-white rounded-lg p-3 border border-purple-200 shadow-sm">
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Profit</div>
+                        <div class="text-lg font-bold text-green-700">${{ predictions[row.original.id].predicted_profit.toLocaleString() }}</div>
+                      </div>
+                      <div class="bg-white rounded-lg p-3 border border-purple-200 shadow-sm">
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">ROI</div>
+                        <div class="text-lg font-bold text-blue-700">{{ predictions[row.original.id].predicted_roi_pct }}%</div>
+                      </div>
+                      <div class="bg-white rounded-lg p-3 border border-purple-200 shadow-sm">
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Time to Flip</div>
+                        <div class="text-lg font-bold text-orange-700">{{ predictions[row.original.id].predicted_months }} mo</div>
+                      </div>
+                      <div class="bg-white rounded-lg p-3 border border-purple-200 shadow-sm">
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Sell Price</div>
+                        <div class="text-lg font-bold text-gray-800">${{ predictions[row.original.id].expected_sell_price.toLocaleString() }}</div>
+                      </div>
+                    </div>
+                    <div class="ml-4 flex flex-col items-end space-y-2">
+                      <span class="px-3 py-1 text-xs font-bold rounded-full" :class="ratingColor(predictions[row.original.id].rating)">
+                        {{ predictions[row.original.id].rating }}
+                      </span>
+                      <button
+                        @click="fetchPrediction(row.original)"
+                        class="text-xs text-purple-500 hover:text-purple-700 flex items-center"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                      </button>
+                      <button
+                        @click="expandedPredictions[row.original.id] = false"
+                        class="text-xs text-gray-400 hover:text-gray-600"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
               <!-- Price history expanded row -->
               <tr v-if="isPriceTrackingTab && hasPriceChanges(row.original) && expandedPriceHistories[row.id]" class="bg-blue-50">
                 <td :colspan="row.getVisibleCells().length" class="px-6 py-2">

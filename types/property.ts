@@ -18,4 +18,13 @@ export type Property = {
   insertedAt?: string
   note?: string
   priceChanges?: any[]
-} 
+}
+
+export type FlipPrediction = {
+  predicted_profit: number
+  predicted_roi_pct: number
+  predicted_months: number
+  profit_per_month: number
+  expected_sell_price: number
+  rating: string
+}
