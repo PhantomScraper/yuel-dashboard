@@ -329,6 +329,24 @@ const fetchPrediction = async (property: Property) => {
   predictionLoading.value[id] = true
   expandedPredictions.value[id] = true
   try {
+    // Resolve buy_price: use current price, fall back to latest priceChange
+    const latestChangePrice = property.priceChanges?.length
+      ? property.priceChanges[property.priceChanges.length - 1].price
+      : null
+    const buyPrice = property.price > 0 ? property.price : (latestChangePrice || 0)
+
+    // Parse timeOnZillow → days_on_market
+    const parseTimeOnZillow = (t: any): number | undefined => {
+      if (!t || typeof t !== 'string') return undefined
+      const m = t.match(/([\d.]+)\s*(day|hour|month)/i)
+      if (!m) return undefined
+      const val = parseFloat(m[1])
+      const unit = m[2].toLowerCase()
+      if (unit.startsWith('hour')) return Math.max(val / 24, 0.5)
+      if (unit.startsWith('month')) return val * 30
+      return val
+    }
+
     const res = await fetch(PREDICT_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -337,8 +355,13 @@ const fetchPrediction = async (property: Property) => {
         beds: property.beds,
         baths: property.baths,
         area_sqft: property.area,
-        buy_price: property.price,
+        buy_price: buyPrice,
         year_built: property.yearBuilt,
+        num_price_changes: property.priceChanges?.length || 0,
+        years_since_prior_sale: property.latestSoldYear
+          ? 2026 - property.latestSoldYear
+          : undefined,
+        days_on_market: parseTimeOnZillow((property as any).timeOnZillow),
       }),
     })
     const data = await res.json()
