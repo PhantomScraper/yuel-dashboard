@@ -387,10 +387,11 @@ const fetchPredictionsForPage = async () => {
 }
 
 // Auto-fetch when page data changes (new data load, pagination, tab switch)
-watch(
-  () => table.value.getRowModel().rows.map(r => r.original.id).join(','),
-  () => { fetchPredictionsForPage() },
-)
+// TEMPORARILY DISABLED - AI predictions hidden
+// watch(
+//   () => table.value.getRowModel().rows.map(r => r.original.id).join(','),
+//   () => { fetchPredictionsForPage() },
+// )
 
 const togglePrediction = (property: Property) => {
   const id = property.id
@@ -503,8 +504,8 @@ const getPriceChangeInfo = (property: Property) => {
                   </template>
                   <template v-else-if="cell.column.id === 'actions'">
                     <div class="flex items-center space-x-2">
-                      <!-- Predict button -->
-                      <button
+                      <!-- Predict button - TEMPORARILY HIDDEN -->
+                      <!-- <button
                         @click="togglePrediction(row.original)"
                         :disabled="predictionLoading[row.original.id]"
                         class="px-2 py-1 text-xs font-medium rounded-full flex items-center transition-colors"
@@ -512,17 +513,15 @@ const getPriceChangeInfo = (property: Property) => {
                           ? 'bg-green-100 text-green-800 hover:bg-green-200'
                           : 'bg-purple-100 text-purple-800 hover:bg-purple-200'"
                       >
-                        <!-- Loading spinner -->
                         <svg v-if="predictionLoading[row.original.id]" class="animate-spin h-3.5 w-3.5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                         </svg>
-                        <!-- Chart icon -->
                         <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                         {{ predictionLoading[row.original.id] ? 'Loading...' : predictions[row.original.id] ? 'Prediction' : 'Predict' }}
-                      </button>
+                      </button> -->
                       <RowActions
                         :property-id="row.original.id"
                         :note="row.original.note || ''"
@@ -541,10 +540,9 @@ const getPriceChangeInfo = (property: Property) => {
                 </td>
               </tr>
               
-              <!-- Prediction result row -->
-              <tr v-if="expandedPredictions[row.original.id]" class="bg-purple-50">
+              <!-- Prediction result row - TEMPORARILY HIDDEN -->
+              <!-- <tr v-if="expandedPredictions[row.original.id]" class="bg-purple-50">
                 <td :colspan="row.getVisibleCells().length" class="px-6 py-3">
-                  <!-- Loading skeleton -->
                   <div v-if="predictionLoading[row.original.id]" class="flex items-center space-x-4">
                     <div class="flex items-center text-purple-600">
                       <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -557,8 +555,6 @@ const getPriceChangeInfo = (property: Property) => {
                       <div v-for="n in 3" :key="n" class="h-10 bg-purple-100 rounded-lg animate-pulse"></div>
                     </div>
                   </div>
-
-                  <!-- Prediction results -->
                   <div v-else-if="predictions[row.original.id]" class="flex items-start justify-between">
                     <div class="grid grid-cols-3 gap-4 flex-1">
                       <div class="bg-white rounded-lg p-3 border border-purple-200 shadow-sm">
@@ -596,7 +592,7 @@ const getPriceChangeInfo = (property: Property) => {
                     </div>
                   </div>
                 </td>
-              </tr>
+              </tr> -->
 
               <!-- Price history expanded row -->
               <tr v-if="isPriceTrackingTab && hasPriceChanges(row.original) && expandedPriceHistories[row.id]" class="bg-blue-50">
