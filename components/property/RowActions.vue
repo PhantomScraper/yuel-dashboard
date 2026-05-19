@@ -20,7 +20,7 @@ const propertyStore = usePropertyStore()
 const isPriceTrackingTab = computed(() => {
   const currentTab = propertyStore.currentTab
   console.log('Current tab in RowActions:', currentTab)
-  return currentTab === 'Tracking price 600_1.2M' || currentTab === 'Tracking price 1.2M_5M'
+  return currentTab === 'Tracking price 300_500k' || currentTab === 'Tracking price 600_1.2M' || currentTab === 'Tracking price 1.2M_5M'
 })
 
 // Track if the note modal is open

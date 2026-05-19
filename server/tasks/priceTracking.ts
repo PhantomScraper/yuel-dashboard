@@ -133,68 +133,76 @@ async function processProperty(property: Property, collection: Collection<Proper
     }
 }
 
+const PRICE_TRACKING_COLLECTIONS = ['300_500k', '600_1.2M', '1.2M_5M'] as const;
+
+async function processCollection(
+    collection: Collection<Property>,
+    collectionName: string
+): Promise<{ success: number; failed: number; errors: ProcessResult[] }> {
+    const properties = await collection.find({}).toArray();
+    console.log(`[${collectionName}] Found ${properties.length} properties to process`);
+
+    const batchSize = 20;
+    const concurrentLimit = 5;
+    const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as ProcessResult[]
+    };
+
+    for (let i = 0; i < properties.length; i += batchSize) {
+        const batch = properties.slice(i, i + batchSize);
+
+        for (let j = 0; j < batch.length; j += concurrentLimit) {
+            const chunk = batch.slice(j, j + concurrentLimit);
+
+            const chunkResults = await Promise.all(
+                chunk.map(property => processProperty(property, collection))
+            );
+
+            chunkResults.forEach(result => {
+                if (result.success) {
+                    results.success++;
+                } else {
+                    results.failed++;
+                    results.errors.push(result);
+                }
+            });
+
+            if (j + concurrentLimit < batch.length) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        if (i + batchSize < properties.length) {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+
+        console.log(`[${collectionName}] Processed ${Math.min(i + batchSize, properties.length)}/${properties.length} properties`);
+        console.log(`[${collectionName}] Current stats - Success: ${results.success}, Failed: ${results.failed}`);
+    }
+
+    return results;
+}
+
 // Main cron job function
 async function runPriceTracking(): Promise<void> {
     console.log('Starting price tracking job at:', new Date().toISOString());
 
     const { db } = await connectToDatabase();
-    const collection = db.collection<Property>('600_1.2M');
 
     try {
-        // Get all properties
-        const properties = (await collection.find({}).toArray());
-        console.log(`Found ${properties.length} properties to process`);
+        for (const collectionName of PRICE_TRACKING_COLLECTIONS) {
+            console.log(`Processing collection: ${collectionName}`);
+            const collection = db.collection<Property>(collectionName);
+            const results = await processCollection(collection, collectionName);
 
-        const batchSize = 20;
-        const concurrentLimit = 5
-        const results = {
-            success: 0,
-            failed: 0,
-            errors: [] as ProcessResult[]
-        };
+            console.log(`[${collectionName}] Price tracking completed:`, results);
 
-        for (let i = 0; i < properties.length; i += batchSize) {
-            const batch = properties.slice(i, i + batchSize);
-
-            // Process batch with limited concurrency
-            for (let j = 0; j < batch.length; j += concurrentLimit) {
-                const chunk = batch.slice(j, j + concurrentLimit);
-
-                const chunkResults = await Promise.all(
-                    chunk.map(property => processProperty(property, collection))
-                );
-
-                // Count results
-                chunkResults.forEach(result => {
-                    if (result.success) {
-                        results.success++;
-                    } else {
-                        results.failed++;
-                        results.errors.push(result);
-                    }
-                });
-
-                // Add delay between chunks
-                if (j + concurrentLimit < batch.length) {
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay between chunks
-                }
+            if (results.failed > 0) {
+                console.error(`[${collectionName}] Failed API calls:`, results.errors);
             }
-
-            // Add longer delay between batches to prevent API rate limiting
-            if (i + batchSize < properties.length) {
-                await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay between batches
-            }
-
-            console.log(`Processed ${Math.min(i + batchSize, properties.length)}/${properties.length} properties`);
-            console.log(`Current stats - Success: ${results.success}, Failed: ${results.failed}`);
         }
-
-        console.log('Price tracking completed:', results);
-
-        if (results.failed > 0) {
-            console.error('Failed API calls:', results.errors);
-        }
-
     } catch (error) {
         console.error('Error in price tracking job:', error);
     }

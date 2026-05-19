@@ -40,7 +40,7 @@ console.log('Table Props:', {
 const columnHelper = createColumnHelper<Property>()
 
 const shouldShowCreatedAt = computed(() => {
-  return propertyStore.currentTab === '600K - 1.2M' || propertyStore.currentTab === '1.2M - 5M'
+  return propertyStore.currentTab === '300k - 500k' || propertyStore.currentTab === '600K - 1.2M' || propertyStore.currentTab === '1.2M - 5M'
 })
 
 const dateFieldName = computed(() => {
@@ -66,7 +66,8 @@ const formatDate = (date: unknown): string => {
 // Check if current tab is a price tracking tab
 const isPriceTrackingTab = computed(() => {
   console.log('Current tab in Table:', propertyStore.currentTab)
-  return propertyStore.currentTab === 'Tracking price 600_1.2M' || 
+  return propertyStore.currentTab === 'Tracking price 300_500k' ||
+         propertyStore.currentTab === 'Tracking price 600_1.2M' || 
          propertyStore.currentTab === 'Tracking price 1.2M_5M'
 })
 

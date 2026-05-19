@@ -13,18 +13,20 @@ const propertyStore = usePropertyStore()
 
 // Tabs
 const tabs = ref([
+  '300k - 500k',
   '600K - 1.2M',
   '1.2M - 5M',
   //'1M - 4M',
   //'600K - 1.3M Filtered',
   // 'Pending Undercontract',
+  'Tracking price 300_500k',
   'Tracking price 600_1.2M',
   'Tracking price 1.2M_5M'
   ])
 const activeTab = ref('600K - 1.2M')
 
 const isRegularTab = computed(() => {
-  return activeTab.value === '600K - 1.2M' || activeTab.value === '1.2M - 5M'
+  return activeTab.value === '300k - 500k' || activeTab.value === '600K - 1.2M' || activeTab.value === '1.2M - 5M'
 })
 
 // Filter states

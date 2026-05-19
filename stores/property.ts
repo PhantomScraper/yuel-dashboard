@@ -10,14 +10,16 @@ type FilterOptions = {
   priceChanges?: boolean
 }
 
-type TabName = '600K - 1.2M' | '1.2M - 5M' | '1M - 4M' | '600K - 1.3M Filtered' | 'Pending Undercontract' | 'Tracking price 600_1.2M' | 'Tracking price 1.2M_5M'
+type TabName = '300k - 500k' | '600K - 1.2M' | '1.2M - 5M' | '1M - 4M' | '600K - 1.3M Filtered' | 'Pending Undercontract' | 'Tracking price 300_500k' | 'Tracking price 600_1.2M' | 'Tracking price 1.2M_5M'
 
 const TAB_COLLECTIONS: Record<TabName, string> = {
+  '300k - 500k': '300_500k',
   '600K - 1.2M': '600_1.2M',
   '1.2M - 5M': '1.2M_5M',
   '1M - 4M': '1M_4M',
   '600K - 1.3M Filtered': '600_1.3M',
   'Pending Undercontract': 'pending_under_contract',
+  'Tracking price 300_500k': '300_500k',
   'Tracking price 600_1.2M': '600_1.2M',
   'Tracking price 1.2M_5M': '1.2M_5M',
 }
@@ -39,7 +41,7 @@ export const usePropertyStore = defineStore('property', () => {
   }
 
   const shouldSortByCreatedAt = computed(() => {
-    return currentTab.value === '600K - 1.2M' || currentTab.value === '1.2M - 5M'
+    return currentTab.value === '300k - 500k' || currentTab.value === '600K - 1.2M' || currentTab.value === '1.2M - 5M'
   })
 
   const fetchProperties = async (tab?: TabName) => {
@@ -79,7 +81,7 @@ export const usePropertyStore = defineStore('property', () => {
         queryParams.append('endDate', filters.value.endDate)
       }
 
-      if (tab === 'Tracking price 600_1.2M' || tab === 'Tracking price 1.2M_5M') {
+      if (tab === 'Tracking price 300_500k' || tab === 'Tracking price 600_1.2M' || tab === 'Tracking price 1.2M_5M') {
         queryParams.append('priceChanges', 'true')
       }
 
