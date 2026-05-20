@@ -23,7 +23,15 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     mongoUri: process.env.MONGO_URI,
-    mongoDbName: process.env.MONGO_DB_NAME
+    mongoDbName: process.env.MONGO_DB_NAME,
+    public: {
+      /** SHOW_300=true | 1 — dashboard shows only 2 tabs (300k–500k + Tracking price 300_500k) */
+      show300:
+        process.env.SHOW_300 === 'true'
+        || process.env.SHOW_300 === '1'
+        || process.env.NUXT_PUBLIC_SHOW_300 === 'true'
+        || process.env.NUXT_PUBLIC_SHOW_300 === '1',
+    },
   },
 
   compatibilityDate: '2025-04-26'

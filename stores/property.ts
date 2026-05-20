@@ -10,7 +10,7 @@ type FilterOptions = {
   priceChanges?: boolean
 }
 
-type TabName = '300k - 500k' | '600K - 1.2M' | '1.2M - 5M' | '1M - 4M' | '600K - 1.3M Filtered' | 'Pending Undercontract' | 'Tracking price 300_500k' | 'Tracking price 600_1.2M' | 'Tracking price 1.2M_5M'
+export type TabName = '300k - 500k' | '600K - 1.2M' | '1.2M - 5M' | '1M - 4M' | '600K - 1.3M Filtered' | 'Pending Undercontract' | 'Tracking price 300_500k' | 'Tracking price 600_1.2M' | 'Tracking price 1.2M_5M'
 
 const TAB_COLLECTIONS: Record<TabName, string> = {
   '300k - 500k': '300_500k',
@@ -232,11 +232,6 @@ export const usePropertyStore = defineStore('property', () => {
 
     fetchProperties(currentTab.value)
   }
-
-  // Initialize
-  onMounted(() => {
-    fetchProperties()
-  })
 
   return {
     properties,

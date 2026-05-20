@@ -133,7 +133,20 @@ async function processProperty(property: Property, collection: Collection<Proper
     }
 }
 
-const PRICE_TRACKING_COLLECTIONS = ['300_500k', '600_1.2M', '1.2M_5M'] as const;
+function envShow300(): boolean {
+    return (
+        process.env.SHOW_300 === 'true'
+        || process.env.SHOW_300 === '1'
+        || process.env.NUXT_PUBLIC_SHOW_300 === 'true'
+        || process.env.NUXT_PUBLIC_SHOW_300 === '1'
+    );
+}
+
+const PRICE_TRACKING_COLLECTIONS = [
+    ...(envShow300() ? (['300_500k'] as const) : []),
+    '600_1.2M',
+    '1.2M_5M',
+] as const;
 
 async function processCollection(
     collection: Collection<Property>,

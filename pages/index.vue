@@ -6,24 +6,34 @@ import PropertyFilters from '~/components/property/PropertyFilters.vue'
 import Settings from '~/components/property/Settings.vue'
 import ScrollableTabs from '~/components/property/ScrollableTabs.vue'
 import PropertyStats from '~/components/property/PropertyStats.vue'
-import { usePropertyStore } from '~/stores/property'
+import { usePropertyStore, type TabName } from '~/stores/property'
 
 // Use the property store directly without destructuring
 const propertyStore = usePropertyStore()
 
-// Tabs
-const tabs = ref([
-  '300k - 500k',
+const runtimeConfig = useRuntimeConfig()
+
+const TABS_WITHOUT_300: TabName[] = [
   '600K - 1.2M',
   '1.2M - 5M',
-  //'1M - 4M',
-  //'600K - 1.3M Filtered',
-  // 'Pending Undercontract',
-  'Tracking price 300_500k',
   'Tracking price 600_1.2M',
-  'Tracking price 1.2M_5M'
-  ])
-const activeTab = ref('600K - 1.2M')
+  'Tracking price 1.2M_5M',
+]
+
+/** When SHOW_300: only these 2 tabs; otherwise use TABS_WITHOUT_300 (4 tabs). */
+const TABS_WITH_300_ONLY: TabName[] = [
+  '300k - 500k',
+  'Tracking price 300_500k',
+]
+
+const defaultTab = (): TabName =>
+  runtimeConfig.public.show300 ? '300k - 500k' : '600K - 1.2M'
+
+const tabs = computed(() =>
+  runtimeConfig.public.show300 ? TABS_WITH_300_ONLY : TABS_WITHOUT_300,
+)
+
+const activeTab = ref<TabName>(defaultTab())
 
 const isRegularTab = computed(() => {
   return activeTab.value === '300k - 500k' || activeTab.value === '600K - 1.2M' || activeTab.value === '1.2M - 5M'
@@ -117,10 +127,10 @@ const totalUpdatedToday = computed(() => {
   return propertyStore.properties.filter(property => {
     if (isRegularTab.value) {
       // For regular tabs, check insertedAt
-      return isToday(property.insertedAt)
+      return isToday(property.insertedAt ?? '')
     } else {
       // For tracking tabs, check update_at
-      return isToday(property.update_at)
+      return isToday(property.update_at ?? '')
     }
   })
 })
@@ -134,7 +144,7 @@ const displayData = computed(() => {
 })
 
 const handleTabChange = async (tab: string) => {
-  activeTab.value = tab
+  activeTab.value = tab as TabName
   filters.value = {
     minPrice: undefined,
     maxPrice: undefined,
@@ -150,9 +160,9 @@ const handleNoteUpdate = async (propertyId: string, note: string) => {
   await propertyStore.updateNote(propertyId, note)
 }
 
-// Fetch properties on component mount
+// Initial fetch uses the correct tab for SHOW_300 (store no longer auto-fetches on mount).
 onMounted(() => {
-  propertyStore.fetchProperties()
+  propertyStore.fetchProperties(activeTab.value)
 })
 </script>
 

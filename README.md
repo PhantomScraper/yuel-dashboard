@@ -79,6 +79,14 @@ zillow-dashboard/
 - Average property price
 - Average property area
 
+## Environment variables
+
+| Variable | Effect |
+|----------|--------|
+| `SHOW_300` or `NUXT_PUBLIC_SHOW_300` | Set to `true` or `1` to show **only 2 tabs**: **300k – 500k** and **Tracking price 300_500k**. If unset or false, the dashboard shows the original **4** tabs (600K–1.2M, 1.2M–5M, and their tracking tabs). |
+
+The price-tracking cron (`server/tasks/priceTracking.ts`) includes the `300_500k` MongoDB collection only when the same flags are enabled.
+
 ## Contributing
 
 1. Fork the repository
