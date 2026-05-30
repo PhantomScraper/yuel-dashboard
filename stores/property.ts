@@ -5,6 +5,7 @@ type FilterOptions = {
   minPrice?: number
   maxPrice?: number
   yearBuilt?: number
+  city?: string
   startDate?: string
   endDate?: string
   priceChanges?: boolean
@@ -71,6 +72,10 @@ export const usePropertyStore = defineStore('property', () => {
 
       if (!!filters.value.yearBuilt) {
         queryParams.append('yearBuilt', filters.value.yearBuilt.toString())
+      }
+
+      if (!!filters.value.city) {
+        queryParams.append('city', filters.value.city)
       }
 
       if (!!filters.value.startDate) {

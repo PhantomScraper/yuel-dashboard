@@ -44,6 +44,7 @@ const filters = ref({
   minPrice: undefined as number | undefined,
   maxPrice: undefined as number | undefined,
   yearBuilt: undefined as number | undefined,
+  city: '',
   startDate: '',
   endDate: '',
 })
@@ -104,6 +105,7 @@ const hasActiveFilters = computed(() => {
     filters.value.minPrice !== undefined ||
     filters.value.maxPrice !== undefined ||
     filters.value.yearBuilt !== undefined ||
+    !!filters.value.city ||
     !!filters.value.startDate ||
     !!filters.value.endDate
   )
@@ -149,6 +151,7 @@ const handleTabChange = async (tab: string) => {
     minPrice: undefined,
     maxPrice: undefined,
     yearBuilt: undefined,
+    city: '',
     startDate: '',
     endDate: '',
   }

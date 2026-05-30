@@ -6,6 +6,7 @@ const props = defineProps<{
     minPrice?: number
     maxPrice?: number
     yearBuilt?: number
+    city?: string
     startDate?: string
     endDate?: string
   }
@@ -20,6 +21,7 @@ const filters = ref({
   minPrice: props.modelValue.minPrice,
   maxPrice: props.modelValue.maxPrice,
   yearBuilt: props.modelValue.yearBuilt,
+  city: props.modelValue.city || '',
   startDate: props.modelValue.startDate || '',
   endDate: props.modelValue.endDate || '',
 })
@@ -50,6 +52,10 @@ const handleDateInput = () => {
   updateParent()
 }
 
+const handleCityInput = () => {
+  updateParent()
+}
+
 // Watch for changes in props
 watch(() => props.modelValue, (newValue) => {
   if (JSON.stringify(newValue) !== JSON.stringify(filters.value)) {
@@ -57,6 +63,7 @@ watch(() => props.modelValue, (newValue) => {
       minPrice: newValue.minPrice,
       maxPrice: newValue.maxPrice,
       yearBuilt: newValue.yearBuilt,
+      city: newValue.city || '',
       startDate: newValue.startDate || '',
       endDate: newValue.endDate || '',
     }
@@ -69,6 +76,7 @@ const clearFilters = () => {
     minPrice: undefined,
     maxPrice: undefined,
     yearBuilt: undefined,
+    city: '',
     startDate: '',
     endDate: '',
   }
@@ -82,6 +90,7 @@ const hasActiveFilters = computed(() => {
     filters.value.minPrice !== undefined ||
     filters.value.maxPrice !== undefined ||
     filters.value.yearBuilt !== undefined ||
+    !!filters.value.city ||
     !!filters.value.startDate ||
     !!filters.value.endDate
   )
@@ -174,7 +183,7 @@ onUnmounted(() => {
       </div>
     </div>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
       <!-- Price Range -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
@@ -209,6 +218,18 @@ onUnmounted(() => {
         />
       </div>
       
+      <!-- City -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+        <input
+          v-model="filters.city"
+          @input="handleCityInput"
+          type="text"
+          placeholder="City"
+          class="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+        />
+      </div>
+
       <!-- Date Range -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>

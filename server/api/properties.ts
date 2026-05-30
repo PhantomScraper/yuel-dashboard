@@ -22,6 +22,11 @@ export default defineEventHandler(async (event) => {
       filters.yearBuilt = Number(query.yearBuilt)
     }
 
+    if (query.city) {
+      // Case-insensitive partial match on city
+      filters.addressCity = { $regex: String(query.city).trim(), $options: 'i' }
+    }
+
     if (query.priceChanges !== 'true' && (query.startDate || query.endDate)) {
       const dateFilter: any = {}
       
