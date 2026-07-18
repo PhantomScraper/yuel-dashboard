@@ -74,7 +74,7 @@ export default defineEventHandler(async (event) => {
       ];
     }
 
-    filters.rawHomeStatusCd = { $nin: ["NotForSale", "ForRent"] }
+    filters.rawHomeStatusCd = { $nin: ["NotForSale", "ForRent", "RecentlySold"] }
 
     // Connect to MongoDB
     const { db } = await connectToDatabase()
